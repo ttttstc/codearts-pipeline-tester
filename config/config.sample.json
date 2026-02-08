@@ -1,0 +1,12 @@
+{
+  "credentials": {
+    "tenant": "YOUR_TENANT_NAME",
+    "username": "YOUR_USERNAME",
+    "password": "YOUR_PASSWORD"
+  },
+  "headless": false,
+  "pipelines": {
+    "Example_Pipeline_1": "https://devcloud.cn-north-4.huaweicloud.com/cicd/project/YOUR_PROJECT_ID/pipeline/detail/YOUR_PIPELINE_ID?v=1",
+    "Example_Pipeline_2": "https://devcloud.cn-north-4.huaweicloud.com/cicd/project/YOUR_PROJECT_ID/pipeline/detail/YOUR_PIPELINE_ID?v=1"
+  }
+}

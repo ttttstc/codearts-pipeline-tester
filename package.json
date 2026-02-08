@@ -1,0 +1,14 @@
+{
+  "name": "huawei-pipeline-tester",
+  "version": "1.0.0",
+  "description": "CodeArts流水线自动化测试工具",
+  "main": "launcher.js",
+  "scripts": {
+    "start": "node launcher.js"
+  },
+  "dependencies": {
+    "playwright": "^1.41.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
