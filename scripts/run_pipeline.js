@@ -17,7 +17,8 @@ async function runPipeline(pipelineUrl, taskName = 'Pipeline') {
   console.log(`🚀 [${taskName}] 启动自动化流程...`);
   
   const config = getConfig();
-  const headless = config && config.headless === true;
+  // 优先读取环境变量，其次读取配置文件，默认 false
+  const headless = process.env.HEADLESS === 'true' || (config && config.headless === true);
   console.log(`⚙️ [${taskName}] Headless模式: ${headless ? '开启' : '关闭'}`);
   
   const browser = await chromium.launch({ headless: headless });
@@ -72,6 +73,9 @@ async function runPipeline(pipelineUrl, taskName = 'Pipeline') {
     const runBtn = page.locator('button:has-text("执行"), .run-btn, button:has-text("运行")').first();
     await runBtn.waitFor({ state: 'visible', timeout: 15000 });
     await runBtn.click({ force: true });
+    
+    // 增加等待，给弹窗渲染时间，避免立即进入重试逻辑
+    await page.waitForTimeout(2000);
 
     console.log(`⏳ [${taskName}] 正在处理确认弹窗与重试逻辑 (API 监控模式)...`);
     

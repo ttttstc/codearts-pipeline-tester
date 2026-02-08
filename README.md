@@ -1,6 +1,6 @@
 # 华为云CodeArts流水线自动化测试工具 (CodeArts Pipeline Tester)
 
-本项目是一套基于 Playwright 开发的自动化脚本，旨在帮助测试同学一键触发华为云 CodeArts/DevCloud 流水线，并实时监控运行状态，最终生成测试报告。
+本项目是一套基于 Playwright 开发的自动化脚本，旨在帮助测试同学一键触发华为云 CodeArts 流水线，并实时监控运行状态，最终生成测试报告。
 
 ---
 
@@ -57,6 +57,12 @@ npx playwright install chromium
 ```bash
 node launcher.js
 ```
+
+**高级参数**：
+*   `--headless` 或 `headless=true`：开启无头模式（后台静默运行，不显示浏览器窗口）。
+    ```bash
+    node launcher.js --headless
+    ```
 
 ---
 

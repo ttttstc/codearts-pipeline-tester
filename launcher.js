@@ -102,6 +102,18 @@ function execute(keys) {
 
   // 传递 BASE_DIR 给子进程，以便它们也能找到 config.json
   const env = { ...process.env, PROJECT_ROOT: BASE_DIR };
+  
+  // 传递 HEADLESS 环境变量
+  const args = process.argv.slice(2);
+  const headlessArg = args.find(arg => arg === '--headless' || arg.startsWith('headless='));
+  if (headlessArg) {
+    if (headlessArg === '--headless') {
+      env.HEADLESS = 'true';
+    } else {
+      const val = headlessArg.split('=')[1];
+      if (val === 'true') env.HEADLESS = 'true';
+    }
+  }
 
   const child = spawn('node', ['batch_executor.js', ...keys], {
     cwd: SKILL_DIR,

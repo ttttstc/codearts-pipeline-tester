@@ -1,63 +1,68 @@
 ---
 name: huawei-pipeline-tester
-description: 华为云 DevCloud 流水线自动化专家。支持 IAM 自动登录、Stealth 规避检测、实时状态监控及批量并行执行。
+description: 华为云 CodeArts 流水线自动化测试专家。支持一键执行、批量并发、实时监控、自动重试与报告生成。
 ---
 
-# Huawei Pipeline Tester
+# 🚀 Huawei Pipeline Tester
 
-此 Skill 专为华为云 DevCloud 流水线设计，提供从登录到运行监控的全流程自动化能力。
+这是一个专为华为云 CodeArts (DevCloud) 设计的自动化测试工具，基于 Playwright 实现。它能帮你自动登录、点击执行、处理弹窗、监控状态并生成报告。
 
-## 核心能力
+## 👨‍💻 人类使用指南 (Human Guide)
 
-1.  **IAM 自动登录**：支持租户名、IAM 用户名、密码自动填充，自动处理登录模式切换。
-2.  **Stealth 规避检测**：内置反爬虫指纹隐藏技术，有效规避“检测到设备不安全”等自动化拦截。
-3.  **智能执行逻辑**：
-    *   **多重定位**：自动识别“执行”或“运行”按钮。
-    *   **弹窗自愈**：自动处理执行后的二次确认弹窗（支持多重选择器及 JS 注入强制点击）。
-    *   **误判防护**：严格校验 API 响应或 URL 跳转，防止假阳性启动。
-4.  **实时状态监控**：
-    *   监听页面 `pipeline-runs/detail` 接口。
-    *   实时反馈 `RUNNING`（黄）、`SUCCESS`（绿）、`FAILED`（红）等状态。
-    *   **结果通知**：运行结束自动生成 Markdown 报告，包含 RunID 和跳转链接。
-5.  **批量并行执行**：支持根据配置文件同时拉起多条流水线，极大提升测试效率。
+### 快速开始
+1.  **环境准备**：首次使用请双击 `安装依赖.bat`。
+2.  **配置账号**：修改 `config/config.json` (参考下方示例)。
+3.  **启动工具**：双击 `开始自动化测试.bat`。
 
-## 配置文件指南
-
-路径：`config/config.json` (位于项目根目录下)
-
+### 配置文件 (`config/config.json`)
 ```json
 {
   "credentials": {
-    "tenant": "您的租户名",
-    "username": "您的IAM用户名",
-    "password": "您的密码"
+    "tenant": "租户名",
+    "username": "用户名",
+    "password": "密码"
   },
-  "headless": false,
+  "headless": false,  // true=后台运行, false=显示浏览器
   "pipelines": {
-    "L0用例": "https://...",
-    "L1用例": "https://..."
+    "L0冒烟": "https://devcloud.../detail/...",
+    "L1回归": "https://devcloud.../detail/..."
   }
 }
 ```
 
-## 使用方式
+### 核心功能
+*   **⚡️ 批量并发**：同时拉起多条流水线，效率翻倍。
+*   **🛡️ 智能自愈**：自动处理“确定”弹窗，遇到并发限制自动重试。
+*   **📊 详细报告**：运行结束后在 `report/` 目录生成 Markdown 报告。
+*   **🔐 免密登录**：登录一次后自动保存 Session，后续免验证码。
 
-### 1. 通过 Claude 调用 (LLM 模式)
-*   **单条运行**：`帮我运行华为云流水线 [URL]`
-*   **批量运行**：`执行华为云流水线 L0用例、L1用例`
+---
 
-### 2. 独立运行 (测试同学推荐)
-无需启动 Claude，直接在本地目录操作：
-*   **环境准备**：首次运行请双击 `安装依赖.bat`。
-*   **一键启动**：双击 `开始自动化测试.bat`。
-*   **命令行启动**：运行 `node launcher.js`。
-*   **交互菜单**：启动后根据数字编号选择要运行的用例，支持 `A` 键运行全部。
+## 🤖 Claude 使用指南 (AI Instructions)
 
-## 依赖环境
-*   **Node.js**: v16+
-*   **Playwright**: 核心驱动
-*   **浏览器**: Chromium (由 Playwright 管理)
+**当用户请求涉及以下内容时，请使用此 Skill：**
+*   "运行华为云流水线"
+*   "执行 CodeArts 测试"
+*   "批量跑流水线"
+*   "监控流水线状态"
 
-## 注意事项
-*   **验证码处理**：若登录时弹出滑动验证码，请在浏览器窗口中手动完成，脚本会自动检测成功并继续。
-*   **超时设置**：默认监控超时为 30 分钟。
+### 🛠️ 执行策略
+
+1.  **单条执行**：
+    *   若用户提供 URL：直接调用 `node scripts/run_pipeline.js "URL" "任务名"`
+    *   若用户提供名称（且在配置中）：读取配置后执行。
+
+2.  **批量执行**：
+    *   推荐使用 `node launcher.js` 进入交互模式（如果环境允许交互）。
+    *   支持无头模式：`node launcher.js --headless`。
+    *   或者直接解析 `config.json`，然后并发调用 `run_pipeline.js`。
+
+3.  **故障排查**：
+    *   如果日志显示 `DEVPIPE.00011104`，告知用户“并发受限，正在自动重试”。
+    *   如果日志显示 `Waiting for selector...` 超时，建议用户检查页面元素是否变更。
+
+### 🔍 关键文件路径
+*   启动脚本：`C:\Users\泥巴猪\huawei-pipeline-tester\launcher.js`
+*   核心逻辑：`C:\Users\泥巴猪\huawei-pipeline-tester\scripts\run_pipeline.js`
+*   配置文件：`C:\Users\泥巴猪\huawei-pipeline-tester\config\config.json`
+*   报告目录：`C:\Users\泥巴猪\huawei-pipeline-tester\report\`
