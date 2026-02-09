@@ -1,18 +1,29 @@
 {
-  "credentials": {
-    "tenant": "YOUR_TENANT_NAME",
-    "username": "YOUR_USERNAME",
-    "password": "YOUR_PASSWORD"
+  "global": {
+    "headless": false
   },
-  "headless": false,
-  "pipelines": {
-    "Smoke_Tests": {
-      "L0_Case_1": "https://devcloud.../pipeline/detail/ID1",
-      "L0_Case_2": "https://devcloud.../pipeline/detail/ID2"
+  "envs": {
+    "default": {
+      "credentials": {
+        "tenant": "YOUR_TENANT",
+        "username": "YOUR_USERNAME",
+        "password": "YOUR_PASSWORD"
+      },
+      "pipelines": {
+        "Smoke_Tests": {
+          "L0_Case_1": "https://devcloud.../ID1"
+        }
+      }
     },
-    "Regression_Tests": {
-      "L1_Case_1": "https://devcloud.../pipeline/detail/ID3"
-    },
-    "Flat_Case_Example": "https://devcloud.../pipeline/detail/ID4"
+    "dev": {
+      "credentials": {
+        "tenant": "DEV_TENANT",
+        "username": "DEV_USER",
+        "password": "DEV_PASSWORD"
+      },
+      "pipelines": {
+        "L0_Smoke": "https://devcloud.../ID2"
+      }
+    }
   }
 }

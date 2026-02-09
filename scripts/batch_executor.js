@@ -4,7 +4,8 @@ const { runPipeline } = require('./run_pipeline');
 
 // 优先使用环境变量 CONFIG_PATH 定位配置文件
 const BASE_DIR = process.env.PROJECT_ROOT || process.cwd();
-const CONFIG_PATH = process.env.CONFIG_PATH || path.join(BASE_DIR, 'config', 'config.json');
+const CONFIG_PATH = path.join(BASE_DIR, 'config', 'config.json');
+const ENV_NAME = process.env.ENV_NAME || 'default';
 
 function formatDuration(ms) {
   if (ms <= 0) return '0s';
@@ -21,12 +22,18 @@ async function batchExecute() {
     process.exit(1);
   }
 
-  let config;
+  let fullConfig;
   try {
-    config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+    fullConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
   } catch (e) {
     console.error('❌ 错误: 无法读取配置文件 config.json');
     process.exit(1);
+  }
+
+  const envConfig = fullConfig.envs ? fullConfig.envs[ENV_NAME] : null;
+  if (!envConfig) {
+      console.error(`❌ 错误: 找不到环境 [${ENV_NAME}] 的配置`);
+      process.exit(1);
   }
 
   const tasks = [];
@@ -34,9 +41,9 @@ async function batchExecute() {
     let url;
     if (key.includes('/')) {
       const [group, name] = key.split('/');
-      url = config.pipelines[group] ? config.pipelines[group][name] : null;
+      url = envConfig.pipelines[group] ? envConfig.pipelines[group][name] : null;
     } else {
-      url = config.pipelines[key];
+      url = envConfig.pipelines[key];
     }
 
     if (url) {

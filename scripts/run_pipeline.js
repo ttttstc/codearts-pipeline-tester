@@ -4,14 +4,78 @@ const path = require('path');
 
 // 动态获取配置路径 (优先使用环境变量 CONFIG_PATH/AUTH_PATH，否则回退到默认路径)
 const BASE_DIR = process.env.PROJECT_ROOT || path.join(__dirname, '..');
-const CONFIG_PATH = process.env.CONFIG_PATH || path.join(BASE_DIR, 'config', 'config.json');
+const CONFIG_PATH = path.join(BASE_DIR, 'config', 'config.json');
 const AUTH_PATH = process.env.AUTH_PATH || path.join(BASE_DIR, 'config', 'auth.json');
+const ENV_NAME = process.env.ENV_NAME || 'default';
 
 function getConfig() {
   try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+    const fullConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+    return {
+      global: fullConfig.global || {},
+      env: fullConfig.envs ? fullConfig.envs[ENV_NAME] : null
+    };
   } catch (e) { return null; }
 }
+
+async function runPipeline(pipelineUrl, taskName = 'Pipeline') {
+  console.log(`🚀 [${taskName}] 启动自动化流程...`);
+  
+  const config = getConfig();
+  if (!config || !config.env) {
+      throw new Error(`无法加载环境 [${ENV_NAME}] 的配置`);
+  }
+
+  // 优先读取环境变量，其次读取全局配置，默认 false
+  const headless = process.env.HEADLESS === 'true' || (config.global && config.global.headless === true);
+  console.log(`⚙️ [${taskName}] 环境: ${ENV_NAME}, Headless模式: ${headless ? '开启' : '关闭'}`);
+  
+  const browser = await chromium.launch({ headless: headless });
+  
+  let contextOptions = {
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+  };
+  
+  if (fs.existsSync(AUTH_PATH)) {
+    contextOptions.storageState = AUTH_PATH;
+  }
+
+  const context = await browser.newContext(contextOptions);
+  await context.addInitScript(() => { Object.defineProperty(navigator, 'webdriver', { get: () => undefined }); });
+  const page = await context.newPage();
+
+  let reportData = {
+    name: taskName,
+    status: 'UNKNOWN',
+    startTime: 0,
+    updateTime: 0,
+    duration: '0s',
+    runId: 'N/A',
+    executor: 'N/A',
+    detailUrl: pipelineUrl
+  };
+
+  try {
+    await page.goto(pipelineUrl, { waitUntil: 'networkidle' });
+
+    if (page.url().includes('auth.huaweicloud.com')) {
+      console.log(`⚠️ [${taskName}] 需要登录...`);
+      const iamSwitchBtn = page.locator('#IAMLinkDiv').first();
+      if (await iamSwitchBtn.isVisible()) {
+        await iamSwitchBtn.click({ force: true });
+        await page.waitForTimeout(1000);
+      }
+
+      const creds = config.env.credentials;
+      if (creds) {
+        await page.locator('#IAMAccountInputId').first().fill(creds.tenant, { force: true });
+        await page.locator('#IAMUsernameInputId').first().fill(creds.username, { force: true });
+        await page.locator('#IAMPasswordInputId').first().fill(creds.password, { force: true });
+        await page.click('#btn_submit', { force: true });
+        await page.waitForURL(url => url.href.includes('cicd/project'), { timeout: 300000 });
+        await context.storageState({ path: AUTH_PATH });
+      }
+    }
 
 async function runPipeline(pipelineUrl, taskName = 'Pipeline') {
   console.log(`🚀 [${taskName}] 启动自动化流程...`);

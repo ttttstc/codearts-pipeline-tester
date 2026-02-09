@@ -16,10 +16,8 @@ const envArg = args.find(arg => arg.startsWith('--env=') || arg === '--env')
                : args.find(arg => arg.startsWith('env='))?.split('=')[1];
 
 const ENV_NAME = envArg || 'default';
-const CONFIG_FILE_NAME = envArg ? `config.${envArg}.json` : 'config.json';
+const CONFIG_PATH = path.join(BASE_DIR, 'config', 'config.json');
 const AUTH_FILE_NAME = envArg ? `auth.${envArg}.json` : 'auth.json';
-
-const CONFIG_PATH = path.join(BASE_DIR, 'config', CONFIG_FILE_NAME);
 const AUTH_PATH = path.join(BASE_DIR, 'config', AUTH_FILE_NAME);
 
 // 动态定位 Playwright 依赖目录
@@ -36,23 +34,29 @@ const rl = readline.createInterface({
 
 async function start() {
   console.log('\n\x1b[36m%s\x1b[0m', '==========================================');
-  console.log('\x1b[36m%s\x1b[0m', '   CodeArts流水线自动化测试工具 (v1.2)   ');
-  console.log('\x1b[36m%s\x1b[0m', `   当前环境: ${ENV_NAME} (${CONFIG_FILE_NAME})`);
+  console.log('\x1b[36m%s\x1b[0m', '   CodeArts流水线自动化测试工具 (v1.3)   ');
+  console.log('\x1b[36m%s\x1b[0m', `   当前环境: ${ENV_NAME}`);
   console.log('\x1b[36m%s\x1b[0m', '==========================================');
 
   // 1. 读取配置
   if (!fs.existsSync(CONFIG_PATH)) {
-    console.error('\x1b[31m%s\x1b[0m', '❌ 错误: 找不到配置文件!');
-    console.error('\x1b[33m%s\x1b[0m', '预期路径: ' + CONFIG_PATH);
-    console.error('\x1b[33m%s\x1b[0m', '当前工作目录: ' + process.cwd());
+    console.error('\x1b[31m%s\x1b[0m', '❌ 错误: 找不到配置文件 config.json!');
     process.exit(1);
   }
 
-  let config;
+  let fullConfig;
   try {
-    config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+    fullConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
   } catch (e) {
-    console.error('\x1b[31m%s\x1b[0m', '❌ 错误: 无法解析配置文件 ' + CONFIG_PATH);
+    console.error('\x1b[31m%s\x1b[0m', '❌ 错误: 无法解析配置文件 config.json');
+    process.exit(1);
+  }
+
+  // 提取当前环境配置
+  const envConfig = fullConfig.envs ? fullConfig.envs[ENV_NAME] : null;
+  if (!envConfig) {
+    console.error('\x1b[31m%s\x1b[0m', `❌ 错误: 在 config.json 中找不到环境 [${ENV_NAME}] 的配置`);
+    console.log('可用环境:', Object.keys(fullConfig.envs || {}).join(', '));
     process.exit(1);
   }
 
@@ -60,13 +64,11 @@ async function start() {
   const allPipelines = {};
   const groups = [];
   
-  if (config.pipelines) {
-    Object.entries(config.pipelines).forEach(([key, value]) => {
+  if (envConfig.pipelines) {
+    Object.entries(envConfig.pipelines).forEach(([key, value]) => {
       if (typeof value === 'string') {
-        // 平铺模式
         allPipelines[key] = value;
       } else if (typeof value === 'object') {
-        // 分组模式
         groups.push({ name: key, items: Object.keys(value) });
         Object.entries(value).forEach(([subKey, subValue]) => {
           allPipelines[`${key}/${subKey}`] = subValue;
@@ -79,7 +81,6 @@ async function start() {
   
   console.log('\n可用流水线列表:');
   if (groups.length > 0) {
-    // 按分组显示
     let globalIdx = 1;
     groups.forEach(group => {
       console.log(`\n📂 ${group.name}:`);
@@ -88,7 +89,6 @@ async function start() {
         globalIdx++;
       });
     });
-    // 显示未分组的
     const ungrouped = pipelineKeys.filter(k => !k.includes('/'));
     if (ungrouped.length > 0) {
       console.log(`\n📂 未分组:`);
@@ -97,7 +97,6 @@ async function start() {
       });
     }
   } else {
-    // 传统平铺显示
     pipelineKeys.forEach((key, index) => {
       console.log(`${index + 1}. ${key}`);
     });
@@ -107,41 +106,24 @@ async function start() {
   console.log('Q. 退出');
 
   rl.question('\n请选择要执行的编号 (多个请用空格分隔): ', (answer) => {
-    let selectedKeys = [];
+    let selectedNames = [];
     if (answer.toUpperCase() === 'Q') { rl.close(); process.exit(0); }
     if (answer.toUpperCase() === 'A') {
-      selectedKeys = pipelineKeys.map(k => allPipelines[k]);
+      selectedNames = pipelineKeys;
     } else {
       const choices = answer.split(/\s+/);
       choices.forEach(c => {
         const idx = parseInt(c) - 1;
-        const key = pipelineKeys[idx];
-        if (key) selectedKeys.push(allPipelines[key]);
+        if (pipelineKeys[idx]) selectedNames.push(pipelineKeys[idx]);
       });
     }
 
-    if (selectedKeys.length === 0) {
+    if (selectedNames.length === 0) {
       console.log('\x1b[33m%s\x1b[0m', '⚠️ 未选择任何有效用例。');
       start();
       return;
     }
 
-    // 注意：execute 现在接收的是 URL 列表，或者我们需要修改 execute 逻辑
-    // 为了保持 batch_executor.js 的逻辑，我们应该传递“名称”而不是 URL
-    // 但 batch_executor.js 内部会去读 config.json。
-    // 如果我们支持分组，batch_executor.js 也得改。
-    
-    // 重新考虑：传递给 batch_executor.js 的应该是“全名”（含分组前缀）
-    const selectedNames = [];
-    if (answer.toUpperCase() === 'A') {
-        selectedNames.push(...pipelineKeys);
-    } else {
-        const choices = answer.split(/\s+/);
-        choices.forEach(c => {
-            const idx = parseInt(c) - 1;
-            if (pipelineKeys[idx]) selectedNames.push(pipelineKeys[idx]);
-        });
-    }
     execute(selectedNames);
   });
 }
@@ -151,16 +133,11 @@ function execute(keys) {
   
   try {
     if (!fs.existsSync(SKILL_DIR)) fs.mkdirSync(SKILL_DIR, { recursive: true });
-    
-    // 确保源文件存在
     const runPipelineSrc = path.join(BASE_DIR, 'scripts', 'run_pipeline.js');
     const batchExecutorSrc = path.join(BASE_DIR, 'scripts', 'batch_executor.js');
     
-    if (!fs.existsSync(runPipelineSrc)) {
-        throw new Error(`找不到脚本文件: ${runPipelineSrc}`);
-    }
-    if (!fs.existsSync(batchExecutorSrc)) {
-        throw new Error(`找不到脚本文件: ${batchExecutorSrc}`);
+    if (!fs.existsSync(runPipelineSrc) || !fs.existsSync(batchExecutorSrc)) {
+        throw new Error('脚本文件丢失');
     }
 
     fs.copyFileSync(runPipelineSrc, path.join(SKILL_DIR, 'run_pipeline.js'));
@@ -171,15 +148,13 @@ function execute(keys) {
     return;
   }
 
-  // 传递 BASE_DIR 给子进程，以便它们也能找到 config.json
   const env = { 
     ...process.env, 
     PROJECT_ROOT: BASE_DIR,
-    CONFIG_PATH: CONFIG_PATH,
+    ENV_NAME: ENV_NAME, // 传递环境名称
     AUTH_PATH: AUTH_PATH
   };
   
-  // 传递 HEADLESS 环境变量
   const headlessArg = args.find(arg => arg === '--headless' || arg.startsWith('headless='));
   if (headlessArg) {
     if (headlessArg === '--headless') {
