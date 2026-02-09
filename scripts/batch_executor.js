@@ -2,9 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { runPipeline } = require('./run_pipeline');
 
-// 优先使用环境变量 PROJECT_ROOT 定位配置文件
+// 优先使用环境变量 CONFIG_PATH 定位配置文件
 const BASE_DIR = process.env.PROJECT_ROOT || process.cwd();
-const CONFIG_PATH = path.join(BASE_DIR, 'config', 'config.json');
+const CONFIG_PATH = process.env.CONFIG_PATH || path.join(BASE_DIR, 'config', 'config.json');
 
 function formatDuration(ms) {
   if (ms <= 0) return '0s';
@@ -31,7 +31,14 @@ async function batchExecute() {
 
   const tasks = [];
   for (const key of args) {
-    const url = config.pipelines[key];
+    let url;
+    if (key.includes('/')) {
+      const [group, name] = key.split('/');
+      url = config.pipelines[group] ? config.pipelines[group][name] : null;
+    } else {
+      url = config.pipelines[key];
+    }
+
     if (url) {
       console.log(`📌 匹配到 [${key}]: ${url}`);
       tasks.push(runPipeline(url, key));

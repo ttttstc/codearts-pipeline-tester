@@ -2,10 +2,10 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-// 动态获取配置路径 (优先使用环境变量 PROJECT_ROOT，否则回退到相对路径)
+// 动态获取配置路径 (优先使用环境变量 CONFIG_PATH/AUTH_PATH，否则回退到默认路径)
 const BASE_DIR = process.env.PROJECT_ROOT || path.join(__dirname, '..');
-const CONFIG_PATH = path.join(BASE_DIR, 'config', 'config.json');
-const AUTH_PATH = path.join(BASE_DIR, 'config', 'auth.json');
+const CONFIG_PATH = process.env.CONFIG_PATH || path.join(BASE_DIR, 'config', 'config.json');
+const AUTH_PATH = process.env.AUTH_PATH || path.join(BASE_DIR, 'config', 'auth.json');
 
 function getConfig() {
   try {

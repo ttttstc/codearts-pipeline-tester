@@ -6,7 +6,13 @@
   },
   "headless": false,
   "pipelines": {
-    "Example_Pipeline_1": "https://devcloud.cn-north-4.huaweicloud.com/cicd/project/YOUR_PROJECT_ID/pipeline/detail/YOUR_PIPELINE_ID?v=1",
-    "Example_Pipeline_2": "https://devcloud.cn-north-4.huaweicloud.com/cicd/project/YOUR_PROJECT_ID/pipeline/detail/YOUR_PIPELINE_ID?v=1"
+    "Smoke_Tests": {
+      "L0_Case_1": "https://devcloud.../pipeline/detail/ID1",
+      "L0_Case_2": "https://devcloud.../pipeline/detail/ID2"
+    },
+    "Regression_Tests": {
+      "L1_Case_1": "https://devcloud.../pipeline/detail/ID3"
+    },
+    "Flat_Case_Example": "https://devcloud.../pipeline/detail/ID4"
   }
 }

@@ -48,14 +48,18 @@ description: 华为云 CodeArts 流水线自动化测试专家。支持一键执
 
 ### 🛠️ 执行策略
 
-1.  **单条执行**：
-    *   若用户提供 URL：直接调用 `node scripts/run_pipeline.js "URL" "任务名"`
-    *   若用户提供名称（且在配置中）：读取配置后执行。
+1.  **环境切换**：
+    *   支持通过 `--env=xxx` 切换配置文件（`config.xxx.json`）。
+    *   不同环境的登录态（`auth.xxx.json`）相互隔离。
 
-2.  **批量执行**：
-    *   推荐使用 `node launcher.js` 进入交互模式（如果环境允许交互）。
+2.  **单条执行**：
+    *   若用户提供 URL：直接调用 `node scripts/run_pipeline.js "URL" "任务名"`
+    *   若用户提供名称（且在配置中）：读取配置后执行。支持分组路径，如 `冒烟测试/L0_01`。
+
+3.  **批量执行**：
+    *   推荐使用 `node launcher.js` 进入交互模式。
+    *   支持分组展示，方便管理海量用例。
     *   支持无头模式：`node launcher.js --headless`。
-    *   或者直接解析 `config.json`，然后并发调用 `run_pipeline.js`。
 
 3.  **故障排查**：
     *   如果日志显示 `DEVPIPE.00011104`，告知用户“并发受限，正在自动重试”。

@@ -59,10 +59,39 @@ node launcher.js
 ```
 
 **高级参数**：
-*   `--headless` 或 `headless=true`：开启无头模式（后台静默运行，不显示浏览器窗口）。
-    ```bash
-    node launcher.js --headless
-    ```
+*   `--env <name>`：切换环境。例如 `--env=prod` 将读取 `config/config.prod.json` 并保存登录态到 `auth.prod.json`。
+*   `--headless`：开启无头模式（后台静默运行）。
+
+**示例**：
+```bash
+# 使用生产环境配置并后台运行
+node launcher.js --env=prod --headless
+```
+
+---
+
+## ⚙️ 配置文件说明
+
+请编辑项目中的 `config/config.json` 文件。现在支持**分组配置**：
+
+```json
+{
+  "credentials": { ... },
+  "headless": false,
+  "pipelines": {
+    "冒烟测试": {
+      "L0_01": "https://...",
+      "L0_02": "https://..."
+    },
+    "回归测试": {
+      "L1_01": "https://..."
+    },
+    "其他": "https://..."
+  }
+}
+```
+*   **分组模式**：在交互界面中会按文件夹图标显示，方便管理大量用例。
+*   **多环境**：你可以创建 `config.dev.json`, `config.prod.json` 等，通过 `--env` 参数切换。
 
 ---
 
