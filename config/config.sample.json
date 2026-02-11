@@ -1,28 +1,52 @@
 {
   "global": {
-    "headless": false
+    "headless": false,
+    "webPort": 3000,
+    "settings": {
+      "maxRetries": 50,
+      "retryIntervalMs": 10000,
+      "monitorTimeoutMs": 1800000,
+      "loginTimeoutMs": 300000
+    }
   },
   "envs": {
     "default": {
+      "label": "默认环境",
       "credentials": {
         "tenant": "YOUR_TENANT",
         "username": "YOUR_USERNAME",
         "password": "YOUR_PASSWORD"
       },
-      "pipelines": {
-        "Smoke_Tests": {
-          "L0_Case_1": "https://devcloud.../ID1"
+      "suites": {
+        "冒烟测试": {
+          "description": "核心链路快速验证",
+          "pipelines": {
+            "L0_Case_1": "https://devcloud.../pipeline/detail/ID1?v=1",
+            "L0_Case_2": "https://devcloud.../pipeline/detail/ID2?v=1"
+          }
+        },
+        "回归测试": {
+          "description": "完整功能回归验证",
+          "pipelines": {
+            "L1_Case_1": "https://devcloud.../pipeline/detail/ID3?v=1"
+          }
         }
       }
     },
     "dev": {
+      "label": "开发环境",
       "credentials": {
         "tenant": "DEV_TENANT",
         "username": "DEV_USER",
         "password": "DEV_PASSWORD"
       },
-      "pipelines": {
-        "L0_Smoke": "https://devcloud.../ID2"
+      "suites": {
+        "冒烟测试": {
+          "description": "开发环境冒烟",
+          "pipelines": {
+            "DEV_L0": "https://devcloud.../pipeline/detail/ID4?v=1"
+          }
+        }
       }
     }
   }

@@ -1,0 +1,28 @@
+[2026-02-10T17:31:18.869Z] Uncaught Exception: tasks is not defined
+ReferenceError: tasks is not defined
+    at C:\Users\泥巴猪\huawei-pipeline-tester\server.js:143:38
+
+[2026-02-10T17:33:33.807Z] Uncaught Exception: tasks is not defined
+ReferenceError: tasks is not defined
+    at C:\Users\泥巴猪\huawei-pipeline-tester\server.js:143:38
+
+[2026-02-10T17:36:01.959Z] Uncaught Exception: tasks is not defined
+ReferenceError: tasks is not defined
+    at C:\Users\泥巴猪\huawei-pipeline-tester\server.js:156:38
+
+[2026-02-10T17:36:10.167Z] Uncaught Exception: tasks is not defined
+ReferenceError: tasks is not defined
+    at C:\Users\泥巴猪\huawei-pipeline-tester\server.js:156:38
+
+[2026-02-10T17:38:36.023Z] Uncaught Exception: tasks is not defined
+ReferenceError: tasks is not defined
+    at C:\Users\泥巴猪\huawei-pipeline-tester\server.js:144:38
+
+[2026-02-10T17:38:59.427Z] Uncaught Exception: tasks is not defined
+ReferenceError: tasks is not defined
+    at C:\Users\泥巴猪\huawei-pipeline-tester\server.js:144:38
+
+[2026-02-10T17:41:03.239Z] Uncaught Exception: tasks is not defined
+ReferenceError: tasks is not defined
+    at C:\Users\泥巴猪\huawei-pipeline-tester\server.js:156:38
+

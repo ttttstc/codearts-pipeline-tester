@@ -4,7 +4,8 @@
   "description": "CodeArts流水线自动化测试工具",
   "main": "launcher.js",
   "scripts": {
-    "start": "node launcher.js"
+    "start": "node launcher.js",
+    "web": "node launcher.js --web"
   },
   "dependencies": {
     "playwright": "^1.41.0"

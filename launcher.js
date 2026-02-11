@@ -7,32 +7,53 @@ const readline = require('readline');
  * 路径优化：使用绝对路径模式
  * 确保无论从哪里启动，都能正确定位到项目根目录
  */
-const BASE_DIR = __dirname; 
+const BASE_DIR = __dirname;
 
 // 解析命令行参数
+console.log('[DEBUG] launcher.js started');
 const args = process.argv.slice(2);
-const envArg = args.find(arg => arg.startsWith('--env=') || arg === '--env') 
-               ? (args[args.indexOf('--env') + 1] || args.find(arg => arg.startsWith('--env=')).split('=')[1])
-               : args.find(arg => arg.startsWith('env='))?.split('=')[1];
+console.log('[DEBUG] args:', args);
+const envArg = args.find(arg => arg.startsWith('--env=') || arg === '--env')
+  ? (args[args.indexOf('--env') + 1] || args.find(arg => arg.startsWith('--env=')).split('=')[1])
+  : args.find(arg => arg.startsWith('env='))?.split('=')[1];
 
 const ENV_NAME = envArg || 'default';
 const CONFIG_PATH = path.join(BASE_DIR, 'config', 'config.json');
 const AUTH_FILE_NAME = envArg ? `auth.${envArg}.json` : 'auth.json';
 const AUTH_PATH = path.join(BASE_DIR, 'config', AUTH_FILE_NAME);
 
-// 动态定位 Playwright 依赖目录
-let SKILL_DIR = path.join(BASE_DIR, 'node_modules');
-if (!fs.existsSync(path.join(SKILL_DIR, 'playwright'))) {
-  const homeDir = process.env.HOME || process.env.USERPROFILE;
-  SKILL_DIR = path.join(homeDir, '.config', 'opencode', 'skill', 'playwright-browser');
+
+
+const webArg = args.includes('--web');
+
+if (webArg) {
+  console.log('[DEBUG] Mode: Web UI. Requiring server.js...');
+  try {
+    const { startServer } = require('./server');
+    console.log('[DEBUG] server.js loaded. preparing to start...');
+    // 读取配置端口
+    let port = 3000;
+    try {
+      const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+      if (config.global && config.global.webPort) port = config.global.webPort;
+    } catch (e) {
+      console.log('[DEBUG] Config read error, using default port 3000');
+    }
+    console.log('[DEBUG] Calling startServer...');
+    startServer(port);
+  } catch (err) {
+    console.error('[CRITICAL ERROR] Failed to load/start server:', err);
+  }
+} else {
+  // 仅在非 Web 模式下创建 readline 接口
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  start(rl);
 }
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-async function start() {
+async function start(rl) {
   console.log('\n\x1b[36m%s\x1b[0m', '==========================================');
   console.log('\x1b[36m%s\x1b[0m', '   CodeArts流水线自动化测试工具 (v1.3)   ');
   console.log('\x1b[36m%s\x1b[0m', `   当前环境: ${ENV_NAME}`);
@@ -63,7 +84,7 @@ async function start() {
   // 解析流水线配置（支持平铺和分组）
   const allPipelines = {};
   const groups = [];
-  
+
   if (envConfig.pipelines) {
     Object.entries(envConfig.pipelines).forEach(([key, value]) => {
       if (typeof value === 'string') {
@@ -78,7 +99,7 @@ async function start() {
   }
 
   const pipelineKeys = Object.keys(allPipelines);
-  
+
   console.log('\n可用流水线列表:');
   if (groups.length > 0) {
     let globalIdx = 1;
@@ -101,7 +122,7 @@ async function start() {
       console.log(`${index + 1}. ${key}`);
     });
   }
-  
+
   console.log('\nA. 执行全部');
   console.log('Q. 退出');
 
@@ -120,41 +141,33 @@ async function start() {
 
     if (selectedNames.length === 0) {
       console.log('\x1b[33m%s\x1b[0m', '⚠️ 未选择任何有效用例。');
-      start();
+      start(rl);
       return;
     }
 
-    execute(selectedNames);
+    execute(selectedNames, rl);
   });
 }
 
-function execute(keys) {
+function execute(keys, rl) {
   console.log('\n\x1b[32m%s\x1b[0m', '🚀 准备执行: ' + keys.join(', '));
-  
-  try {
-    if (!fs.existsSync(SKILL_DIR)) fs.mkdirSync(SKILL_DIR, { recursive: true });
-    const runPipelineSrc = path.join(BASE_DIR, 'scripts', 'run_pipeline.js');
-    const batchExecutorSrc = path.join(BASE_DIR, 'scripts', 'batch_executor.js');
-    
-    if (!fs.existsSync(runPipelineSrc) || !fs.existsSync(batchExecutorSrc)) {
-        throw new Error('脚本文件丢失');
-    }
 
-    fs.copyFileSync(runPipelineSrc, path.join(SKILL_DIR, 'run_pipeline.js'));
-    fs.copyFileSync(batchExecutorSrc, path.join(SKILL_DIR, 'batch_executor.js'));
-  } catch (e) {
-    console.error('\x1b[31m%s\x1b[0m', '❌ 环境同步失败: ' + e.message);
-    start();
+  const scriptsDir = path.join(BASE_DIR, 'scripts');
+  const batchExecutorPath = path.join(scriptsDir, 'batch_executor.js');
+
+  if (!fs.existsSync(batchExecutorPath)) {
+    console.error('\x1b[31m%s\x1b[0m', '❌ 错误: 找不到脚本文件 scripts/batch_executor.js');
+    start(rl);
     return;
   }
 
-  const env = { 
-    ...process.env, 
+  const env = {
+    ...process.env,
     PROJECT_ROOT: BASE_DIR,
-    ENV_NAME: ENV_NAME, // 传递环境名称
+    ENV_NAME: ENV_NAME,
     AUTH_PATH: AUTH_PATH
   };
-  
+
   const headlessArg = args.find(arg => arg === '--headless' || arg.startsWith('headless='));
   if (headlessArg) {
     if (headlessArg === '--headless') {
@@ -165,8 +178,9 @@ function execute(keys) {
     }
   }
 
+  // 直接在 scripts 目录执行，不再拷贝文件
   const child = spawn('node', ['batch_executor.js', ...keys], {
-    cwd: SKILL_DIR,
+    cwd: scriptsDir,
     stdio: 'inherit',
     shell: true,
     env: env
@@ -176,7 +190,7 @@ function execute(keys) {
     console.log('\n\x1b[36m%s\x1b[0m', '==========================================');
     console.log('\x1b[32m%s\x1b[0m', '🏁 执行完毕 (退出码: ' + code + ')');
     console.log('\x1b[36m%s\x1b[0m', '==========================================');
-    start(); // 重新开始循环
+    start(rl);
   });
 }
 
